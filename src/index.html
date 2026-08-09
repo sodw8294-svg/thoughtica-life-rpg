@@ -2571,13 +2571,7 @@
               </button>
             </div>
 
-            <!-- SMART CHIP SUGGESTIONS -->
-            <div class="flex gap-2 overflow-x-auto scrollbar-none text-[10px] uppercase font-bold shrink-0">
-              <button onclick="sendQuickCompanionPrompt('Anchor Focus')" class="px-3 py-1.5 bg-indigo-500/10 hover:bg-indigo-500/25 border border-indigo-500/30 text-indigo-300 rounded-xl shrink-0 cursor-pointer transition-all flex items-center gap-1">🛡️ Anchor Focus</button>
-              <button onclick="sendQuickCompanionPrompt('Strategy Request')" class="px-3 py-1.5 bg-purple-500/10 hover:bg-purple-500/25 border border-purple-500/30 text-purple-300 rounded-xl shrink-0 cursor-pointer transition-all flex items-center gap-1">📈 Strategy Request</button>
-              <button onclick="sendQuickCompanionPrompt('Clarity Breathe')" class="px-3 py-1.5 bg-emerald-500/10 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-300 rounded-xl shrink-0 cursor-pointer transition-all flex items-center gap-1">🧘 Clarity Breathe</button>
-              <button onclick="sendQuickCompanionPrompt('Motivation Boost')" class="px-3 py-1.5 bg-amber-500/10 hover:bg-amber-500/25 border border-amber-500/30 text-amber-300 rounded-xl shrink-0 cursor-pointer transition-all flex items-center gap-1">🔥 Motivation Boost</button>
-            </div>
+
 
           </div>
 
@@ -2587,7 +2581,7 @@
             <!-- Tab Switcher Navigation -->
             <div class="flex bg-slate-950/80 border-b border-white/10 p-1">
               <button onclick="switchCompanionTab('chat')" id="tab-btn-comp-chat" class="flex-1 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer bg-white/5 text-white">
-                💬 Sanctuary Chat
+                📜 Companion's Vision
               </button>
               <button onclick="switchCompanionTab('stylist')" id="tab-btn-comp-stylist" class="flex-1 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer text-slate-400 hover:text-white">
                 🎨 Appearance Stylist
@@ -2600,25 +2594,20 @@
             <!-- Tab Content Viewport Container -->
             <div class="flex-1 flex flex-col overflow-hidden relative">
 
-              <!-- TAB 1: SANCTUARY CHAT -->
+              <!-- TAB 1: COMPANION'S VISION -->
               <div id="tab-panel-comp-chat" class="absolute inset-0 flex flex-col">
                 
-                <!-- Chat Search Header -->
-                <div class="px-3.5 py-2 bg-slate-950/40 border-b border-white/5 flex gap-2 items-center">
-                  <i data-lucide="search" class="w-3.5 h-3.5 text-slate-500 shrink-0"></i>
-                  <input type="text" id="comp-chat-search" oninput="searchCompanionMessages(this.value)" placeholder="Search conversation logs..." class="flex-1 bg-transparent text-[11px] text-white focus:outline-none placeholder-slate-600 select-text">
-                </div>
-
-                <!-- Chat Feed Scroll Area -->
-                <div id="custom-ai-chat-log" class="flex-1 p-4 overflow-y-auto space-y-4 scrollbar-none flex flex-col gap-2"></div>
-
-                <!-- Messaging Input Block -->
-                <div class="p-3 border-t border-white/10 bg-slate-950/90 flex items-center gap-2">
-                  <input type="text" id="custom-ai-chat-input" placeholder="Type a message to your custom companion..." class="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition-all select-text">
-                  <button onclick="sendCustomAIChat()" class="p-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white rounded-xl shadow-lg transition-all flex items-center justify-center shrink-0 cursor-pointer">
-                    <i data-lucide="send" class="w-4 h-4"></i>
+                <!-- Action Header -->
+                <div class="px-4 py-3 bg-slate-950/40 border-b border-white/5 flex flex-col gap-2 items-center justify-center text-center">
+                  <h3 class="text-sm font-extrabold text-amber-300 tracking-widest uppercase">The Oracle's Assessment</h3>
+                  <p class="text-[10px] text-slate-400 max-w-sm">Request a narrative reading of your current journey, goals, and recent check-ins.</p>
+                  <button onclick="requestCompanionVision()" id="btn-request-vision" class="mt-2 w-full max-w-xs py-2 bg-gradient-to-r from-amber-500/20 to-purple-600/20 hover:from-amber-500/40 hover:to-purple-600/40 border border-amber-500/30 text-amber-200 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-lg shadow-amber-500/10 cursor-pointer">
+                    <span class="text-base">✨</span> Request Vision
                   </button>
                 </div>
+
+                <!-- Vision Feed Scroll Area -->
+                <div id="custom-ai-chat-log" class="flex-1 p-4 overflow-y-auto space-y-4 scrollbar-none flex flex-col gap-4"></div>
               </div>
 
               <!-- TAB 2: APPEARANCE STYLIST & PRESETS -->
@@ -5117,124 +5106,37 @@
       S.customAI.chatHistory.push({ role: 'assistant', content: reply });
       save();
 
-      // Typing animation for live response feel
-      const bubbleContainer = document.createElement('div');
-      bubbleContainer.className = "flex justify-start w-full";
-      log.appendChild(bubbleContainer);
-
-      const bubbleId = 'live-typing-' + Date.now();
-      bubbleContainer.innerHTML = `
-        <div class="max-w-[85%] rounded-2xl px-4 py-3 text-xs bg-slate-900 border border-white/5 rounded-tl-none shadow-xl flex flex-col gap-1.5 relative group">
-          <p class="font-extrabold text-[9px] text-indigo-300 uppercase tracking-widest flex items-center gap-1">
-            <span>${S.customAI.name}</span>
-            <span class="w-1 h-1 rounded-full bg-indigo-500"></span>
-            <span>Just Now</span>
-          </p>
-          <div id="${bubbleId}" class="leading-relaxed text-slate-200 chat-bubble-markdown"></div>
-        </div>
-      `;
-      
-      const el = document.getElementById(bubbleId);
-      let i = 0;
-      const speed = reply.length > 200 ? 5 : 15;
-      
-      function typeText() {
-        if (i < reply.length) {
-          el.innerHTML = parseMarkdownAndCards(reply.slice(0, i + 1));
-          i++;
-          log.scrollTop = log.scrollHeight;
-          setTimeout(typeText, speed);
-        } else {
-          renderCustomAIChat();
-        }
-      }
-      typeText();
+      renderCustomAIChat();
 
       addRelationshipXp(8);
     }
 
-    async function sendCustomAIChat() {
-      const input = document.getElementById('custom-ai-chat-input');
-      if (!input) return;
-      const text = input.value.trim();
-      if (!text) return;
-
-      input.value = '';
-
-      if (!S.customAI.chatHistory) S.customAI.chatHistory = [];
-
-      // ── Memory command handling ────────────────────────────────────────────
-      if (MEMORY_CMD_VIEW.test(text)) {
-        const viewText = buildMemoryViewText();
-        S.customAI.chatHistory.push({ role: 'user', content: text });
-        S.customAI.chatHistory.push({ role: 'assistant', content: viewText });
-        save();
-        renderCustomAIChat();
-        return;
+    async function requestCompanionVision() {
+      const btn = document.getElementById('btn-request-vision');
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = `<span class="animate-pulse">✨ Divining...</span>`;
       }
 
-      if (MEMORY_CMD_DONT_REMEMBER.test(text)) {
-        S.customAI.chatHistory.push({ role: 'user', content: text });
-        const ack = "Got it — I won't store this exchange. 🔒 Your privacy is respected.";
-        S.customAI.chatHistory.push({ role: 'assistant', content: ack });
-        save();
-        renderCustomAIChat();
-        return;
+      const mood = document.getElementById('checkin-mood') ? document.getElementById('checkin-mood').value : 'Unknown';
+      const energy = document.getElementById('checkin-energy') ? document.getElementById('checkin-energy').value : 50;
+      const hurdle = document.getElementById('checkin-hurdle') ? document.getElementById('checkin-hurdle').value : 'None';
+      const goal = document.getElementById('checkin-goal') ? document.getElementById('checkin-goal').value : S.goal;
+
+      const userText = `Provide an Oracle's Vision and Assessment of my current state.
+My Goal: ${goal || 'Unknown'}
+My Level: ${S.level || 1} (XP: ${S.xp || 0})
+My recent mood: ${mood}
+Energy: ${energy}%
+Current Hurdle: ${hurdle}
+Give me a short, highly thematic adventure-style reading of how I am doing and one actionable quest. Use markdown. Do not ask me a question, just give the assessment.`;
+
+      await triggerCompanionAIResponse(userText);
+      
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = `<span class="text-base">✨</span> Request Vision`;
       }
-
-      if (MEMORY_CMD_REMEMBER.test(text)) {
-        // Store the previous user message as a memory fact
-        const prevUserMsg = [...(S.customAI.chatHistory || [])]
-          .reverse()
-          .find(m => m.role === 'user' && !MEMORY_CMD_REMEMBER.test(m.content));
-        const factText = prevUserMsg ? prevUserMsg.content.slice(0, 200) : text.replace(MEMORY_CMD_REMEMBER, '').trim();
-        if (factText) {
-          const stored = storeAutoMemory({ text: factText, category: 'explicit', confidence: 1, source: 'user_command' });
-          const ack = stored
-            ? `Remembered! 💾 I've stored: *"${factText.slice(0, 100)}${factText.length > 100 ? '…' : ''}"*`
-            : "I already have that noted. 🔮";
-          S.customAI.chatHistory.push({ role: 'user', content: text });
-          S.customAI.chatHistory.push({ role: 'assistant', content: ack });
-          save();
-          renderMemoriesList();
-          renderCustomAIChat();
-          return;
-        }
-      }
-
-      const forgetMatch = text.match(MEMORY_CMD_FORGET);
-      if (forgetMatch && !/\b(this|it)\b/i.test(forgetMatch[2])) {
-        const target = forgetMatch[2].trim().toLowerCase();
-        const before = (S.customAI.memories || []).length;
-        S.customAI.memories = (S.customAI.memories || []).filter(m =>
-          !m.text.toLowerCase().includes(target)
-        );
-        const removed = before - (S.customAI.memories || []).length;
-        const ack = removed > 0
-          ? `Done — I've removed ${removed} memory item${removed > 1 ? 's' : ''} related to *"${target}"*. 🗑️`
-          : `I don't have any memories specifically about *"${target}"*.`;
-        S.customAI.chatHistory.push({ role: 'user', content: text });
-        S.customAI.chatHistory.push({ role: 'assistant', content: ack });
-        save();
-        renderMemoriesList();
-        renderCustomAIChat();
-        return;
-      }
-      // ── End memory command handling ──────────────────────────────────────
-
-      S.customAI.chatHistory.push({ role: 'user', content: text });
-      renderCustomAIChat();
-
-      // Auto-extract candidate memories (only if memory learning is on)
-      if (S.customAI?.memoryEnabled !== false) {
-        const candidates = extractCandidateMemories(text);
-        for (const c of candidates) {
-          storeAutoMemory(c);
-        }
-        if (candidates.length > 0) renderMemoriesList();
-      }
-
-      await triggerCompanionAIResponse(text);
     }
 
     async function fetchCustomAIResponse(userText) {
@@ -5474,30 +5376,26 @@ Directives:
       log.innerHTML = '';
       
       const history = S.customAI?.chatHistory || [];
-      if (history.length === 0) {
+      const assistantLogs = history.filter(m => m.role === 'assistant' && !m.content.startsWith("System Sync Update:"));
+
+      if (assistantLogs.length === 0) {
         log.innerHTML = `
           <div class="text-center py-8 text-slate-500 text-xs my-auto flex flex-col items-center gap-2">
             <span class="text-3xl animate-bounce">🔮</span>
-            <p class="font-extrabold text-slate-400">Your companion awaits</p>
-            <p class="text-[10px] text-slate-500 max-w-[200px]">Submit a Daily Somatic Sync or send a message to start.</p>
+            <p class="font-extrabold text-slate-400">The Oracle awaits</p>
+            <p class="text-[10px] text-slate-500 max-w-[200px]">Request a vision to see your path.</p>
           </div>
         `;
         return;
       }
 
-      history.forEach((m, idx) => {
-        const isUser = m.role === 'user';
-        if (m.content.startsWith("System Sync Update:")) return;
-
+      assistantLogs.forEach((m, idx) => {
         const bubble = document.createElement('div');
-        bubble.className = `flex ${isUser ? 'justify-end' : 'justify-start'} w-full`;
+        bubble.className = `flex justify-center w-full mb-4`;
         
-        const actionsHtml = isUser 
-          ? `<button onclick="copyMessageToClipboard(\`${m.content.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`, this)" class="opacity-0 group-hover:opacity-100 absolute top-2 right-2 text-[8px] font-bold bg-black/40 hover:bg-black/60 px-1.5 py-0.5 rounded text-slate-400 transition-all">📋 Copy</button>`
-          : `
+        const actionsHtml = `
             <div class="opacity-0 group-hover:opacity-100 absolute top-2 right-2 flex gap-1 transition-all">
-              <button onclick="copyMessageToClipboard(\`${m.content.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`, this)" class="text-[8px] font-bold bg-black/40 hover:bg-black/60 px-1.5 py-0.5 rounded text-slate-400">📋 Copy</button>
-              ${idx === history.length - 1 ? `<button onclick="regenerateLastCompanionResponse()" class="text-[8px] font-bold bg-indigo-500/30 hover:bg-indigo-500/50 px-1.5 py-0.5 rounded text-indigo-300">🔄 Retry</button>` : ''}
+              <button onclick="copyMessageToClipboard(\`${m.content.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`, this)" class="text-[8px] font-bold bg-black/40 hover:bg-black/60 px-1.5 py-0.5 rounded text-amber-500">📋 Copy</button>
             </div>
           `;
 
