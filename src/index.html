@@ -4734,10 +4734,7 @@
       };
 
       const text = prompts[type] || "Hello, let's talk about my daily goals.";
-      const input = document.getElementById('custom-ai-chat-input');
-      if (input) input.value = text;
-      
-      sendCustomAIChat();
+      triggerCompanionAIResponse(text);
     }
 
     // Memories System
@@ -5428,17 +5425,124 @@ Directives:
       }
     }
 
-    // Attach key listener to Custom AI chat input
-    document.addEventListener('DOMContentLoaded', () => {
-      setTimeout(() => {
-        const inp = document.getElementById('custom-ai-chat-input');
-        if (inp) {
-          inp.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') sendCustomAIChat();
-          });
+    // Google Login Handler
+    function loginWithGoogle() {
+      showXPToast(0, "Connecting Google Account... 🔐", 1.0, false);
+      S.user = S.user || { name: 'Google User', email: 'user@gmail.com' };
+      S.name = 'Google User';
+      save();
+      if (typeof updateHeaderProfileUI === 'function') updateHeaderProfileUI();
+      switchScreen('dashboard');
+      showXPToast(25, "Signed in with Google! (+25 XP) 🚀");
+    }
+
+    // Ambient Soundscape Controller
+    let currentSoundscapeAudio = null;
+    let currentSoundscapeType = null;
+    function toggleSoundscape(type) {
+      if (currentSoundscapeAudio && currentSoundscapeType === type) {
+        currentSoundscapeAudio.pause();
+        currentSoundscapeAudio = null;
+        currentSoundscapeType = null;
+        showXPToast(0, "Soundscape Paused 🤫", 1.0, false);
+        return;
+      }
+      if (currentSoundscapeAudio) {
+        currentSoundscapeAudio.pause();
+      }
+      const urls = {
+        rain: 'https://cdn.pixabay.com/download/audio/2021/09/06/audio_9da0c2262a.mp3?filename=soft-rain-ambient-111154.mp3',
+        waves: 'https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3?filename=ocean-waves-112906.mp3',
+        forest: 'https://cdn.pixabay.com/download/audio/2021/09/06/audio_412d26d0bb.mp3?filename=forest-wind-111155.mp3'
+      };
+      const url = urls[type] || urls.rain;
+      currentSoundscapeAudio = new Audio(url);
+      currentSoundscapeAudio.loop = true;
+      currentSoundscapeAudio.volume = 0.5;
+      currentSoundscapeAudio.play().catch(e => console.warn('Soundscape audio playback issue:', e));
+      currentSoundscapeType = type;
+      showXPToast(0, `Playing ${type.charAt(0).toUpperCase() + type.slice(1)} Soundscape 🎧`, 1.0, false);
+    }
+
+    // Digital Detox Sanctuary Timer Engine
+    let detoxTimerInterval = null;
+    let detoxTimeRemaining = 0;
+    let detoxTotalTime = 0;
+
+    function startDetoxTimer(mins) {
+      mins = parseInt(mins, 10);
+      if (isNaN(mins) || mins <= 0) return;
+      
+      stopDetoxTimer();
+      
+      detoxTotalTime = mins * 60;
+      detoxTimeRemaining = detoxTotalTime;
+      
+      const label = document.getElementById('detox-timer-label');
+      if (label) label.textContent = `Active Detox Session: ${mins} min`;
+      showXPToast(15, `Digital Detox Started! (${mins}m) 🛡️`, 1.0, false);
+      
+      updateDetoxTimerUI();
+      
+      detoxTimerInterval = setInterval(() => {
+        detoxTimeRemaining--;
+        updateDetoxTimerUI();
+        
+        if (detoxTimeRemaining <= 0) {
+          stopDetoxTimer();
+          const bonusMinutes = mins;
+          S.detoxMinutes = (S.detoxMinutes || 0) + bonusMinutes;
+          S.detoxStreak = (S.detoxStreak || 0) + 1;
+          addXP(bonusMinutes * 2, 'Completed Digital Detox Session');
+          showXPToast(bonusMinutes * 2, `🎉 Detox Session Complete! (+${bonusMinutes * 2} XP)`);
+          if (typeof triggerConfetti === 'function') triggerConfetti();
+          save();
+          if (document.getElementById('detox-streak-display')) document.getElementById('detox-streak-display').textContent = S.detoxStreak;
+          if (document.getElementById('detox-minutes-display')) document.getElementById('detox-minutes-display').textContent = S.detoxMinutes;
         }
-      }, 500);
-    });
+      }, 1000);
+    }
+
+    function updateDetoxTimerUI() {
+      const display = document.getElementById('detox-timer-display');
+      const arc = document.getElementById('detox-timer-arc');
+      if (display) {
+        const m = Math.floor(detoxTimeRemaining / 60).toString().padStart(2, '0');
+        const s = (detoxTimeRemaining % 60).toString().padStart(2, '0');
+        display.textContent = `${m}:${s}`;
+      }
+      if (arc && detoxTotalTime > 0) {
+        const pct = detoxTimeRemaining / detoxTotalTime;
+        const offset = 327 * (1 - pct);
+        arc.style.strokeDashoffset = offset;
+      }
+    }
+
+    function startDetoxTimerCustom() {
+      const inp = document.getElementById('detox-custom-mins');
+      if (!inp) return;
+      const val = parseInt(inp.value, 10);
+      if (val > 0) {
+        startDetoxTimer(val);
+        inp.value = '';
+      } else {
+        showXPToast(0, 'Please enter a valid number of minutes ⏳', 1.0, false);
+      }
+    }
+
+    function stopDetoxTimer() {
+      if (detoxTimerInterval) {
+        clearInterval(detoxTimerInterval);
+        detoxTimerInterval = null;
+      }
+      detoxTimeRemaining = 0;
+      const display = document.getElementById('detox-timer-display');
+      const label = document.getElementById('detox-timer-label');
+      const arc = document.getElementById('detox-timer-arc');
+      if (display) display.textContent = '00:00';
+      if (label) label.textContent = 'No active session';
+      if (arc) arc.style.strokeDashoffset = 327;
+    }
 
     function updateAiApiKey(val) {
       S.aiApiKey = val.trim();
