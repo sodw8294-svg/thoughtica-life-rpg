@@ -3083,6 +3083,11 @@
 
 
           <div>
+            <label class="text-[10px] text-slate-400 font-bold uppercase block mb-1">AI API Key (Groq / Gemini / OpenAI)</label>
+            <input type="password" id="settings-ai-api-key" onchange="updateAiApiKey(this.value)" placeholder="Enter API Key to unlock full AI capabilities..." class="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs text-slate-100 focus:outline-none">
+          </div>
+
+          <div>
             <label class="text-[10px] text-slate-400 font-bold uppercase block mb-1">Daily Sanctuary Local Reminder</label>
             <select id="settings-reminder-select" onchange="setSanctuaryReminder(this.value)" class="w-full bg-slate-900 border border-white/10 rounded-xl px-3 py-2 text-xs text-slate-100 focus:outline-none">
               <option value="off">Off (Silent Sanctuary)</option>
@@ -5399,6 +5404,9 @@ Directives:
       }
 
       // ── Tier 5: Context-aware Offline AI Wisdom Fallback ──
+      if (!S.aiApiKey || S.aiApiKey.trim().length < 5) {
+        return "I'm currently operating offline because the default free AI proxy is down. To unlock my full conversational abilities, deep intelligence, and memory, please connect a free AI API Key (like **Groq** or **Gemini**) in your Sanctuary Settings!\n\n*(Open Settings by tapping the gear icon in the corner)*";
+      }
       return generateOfflineKoraWisdom(userText, cName);
     }
 
@@ -5533,6 +5541,12 @@ Directives:
         }
       }, 500);
     });
+
+    function updateAiApiKey(val) {
+      S.aiApiKey = val.trim();
+      showXPToast(0, `AI API Key Saved! 🧠`, 1.0, false);
+      save();
+    }
 
     function updateSettingsGoal(val) {
       if (!val.trim()) return;
@@ -9223,6 +9237,8 @@ Upgrade to **Thoughtica Pro** for unlimited conversations, long-term memory, and
       document.getElementById('settings-goal-input').value = S.goal || 'Cultivate mental clarity & inner strength';
 
       document.getElementById('settings-reminder-select').value = S.reminderTime || 'off';
+      const aiInput = document.getElementById('settings-ai-api-key');
+      if (aiInput) aiInput.value = S.aiApiKey || '';
       document.getElementById('settings-modal').classList.remove('hidden'); 
     }
     function closeSettings() { document.getElementById('settings-modal').classList.add('hidden'); }
