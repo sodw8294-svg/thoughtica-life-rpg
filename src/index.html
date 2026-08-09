@@ -5762,17 +5762,14 @@ Directives:
       try {
         const root = document.getElementById('app-sanctuary-root');
         if (root) root.classList.remove('hidden');
-        const overlay = document.getElementById('landing-page-overlay');
-        if (overlay) overlay.classList.add('hidden');
-        const prologue = document.getElementById('cinematic-prologue-cutscene');
-        if (prologue) prologue.classList.add('hidden');
-        const tour = document.getElementById('tour-spotlight-modal');
-        if (tour) tour.classList.add('hidden');
-        const voiced = document.getElementById('voiced-intro-modal');
-        if (voiced) voiced.classList.add('hidden');
+        ['landing-page-overlay', 'cinematic-prologue-cutscene', 'tour-spotlight-modal', 'voiced-intro-modal', 'auth-gate', 'modal-auth'].forEach(id => {
+          const el = document.getElementById(id);
+          if (el) el.classList.add('hidden');
+        });
         _switchLock = false;
         switchScreen('dashboard', true);
         document.body.classList.remove('overflow-hidden');
+        safeguardAllIcons();
       } catch (e) {
         console.error("showDashboard error:", e);
       }
@@ -5817,12 +5814,9 @@ Directives:
         // Pre-initialise arena boss state so it's ready without visiting the tab
         if (typeof getArenaState === 'function') getArenaState();
 
-        const overlay = document.getElementById('landing-page-overlay');
-        if (S.introSeen || S.tourComplete) {
-          showDashboard();
-        } else {
-          startPrologueCutscene();
-        }
+        showDashboard();
+        S.introSeen = true;
+        save();
 
         // 🔮 KORA BREAKTHROUGH: Boot proactive daily features after a moment
         setTimeout(() => {
