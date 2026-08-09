@@ -5831,6 +5831,7 @@ Directives:
 
       } catch (e) {
         console.error('Init app error:', e);
+        showDashboard();
       }
     }
 
@@ -6666,6 +6667,11 @@ Directives:
     // SCREEN SWITCHER — instant responsive tab transition
     let _switchLock = false;
     function switchScreen(screenName, force = false) {
+      const root = document.getElementById('app-sanctuary-root');
+      if (root && root.classList.contains('hidden')) root.classList.remove('hidden');
+      const overlay = document.getElementById('landing-page-overlay');
+      if (overlay && !overlay.classList.contains('hidden')) overlay.classList.add('hidden');
+
       const allScreens = document.querySelectorAll('.screen');
       const targetScreen = document.getElementById(`screen-${screenName}`);
       if (!targetScreen) return;
