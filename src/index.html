@@ -34,6 +34,8 @@
   <!-- Tailwind CSS Integration -->
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
+    /* Explicit .hidden — Tailwind v4 Vite plugin tree-shakes it because it is only toggled via JS */
+    .hidden { display: none !important; }
     body {
       font-family: 'Plus Jakarta Sans', sans-serif;
       background: #090A0F;
@@ -5710,6 +5712,21 @@ Directives:
           if (!S.language) S.language = 'en-US';
           if (!S.goal || S.goal.toLowerCase().includes('prototype') || S.goal.toLowerCase().includes('indie app')) S.goal = 'Cultivate mental clarity & inner strength';
           if (!S.xpTracker) S.xpTracker = { date: new Date().toISOString().slice(0, 10), actions: {} };
+          if (!S.companion) S.companion = { name: 'Kora', style: 'atmospheric', aura: 'twilight' };
+          if (!S.streak) S.streak = 1;
+          if (S.xp === undefined) S.xp = 0;
+          if (!S.level) S.level = 1;
+          if (S.skillPoints === undefined) S.skillPoints = 0;
+          if (S.completedQuests === undefined) S.completedQuests = 0;
+          if (!S.moodHistory) S.moodHistory = [];
+          if (S.koraRealTalkMode === undefined) S.koraRealTalkMode = false;
+          if (!S.lastFutureSelfLetterDate) S.lastFutureSelfLetterDate = '';
+          if (!S.shadowQuestionAnswered) S.shadowQuestionAnswered = '';
+          if (!S.morningBriefingDate) S.morningBriefingDate = '';
+          if (!S.microChallengeDate) S.microChallengeDate = '';
+          if (S.microChallengeCompleted === undefined) S.microChallengeCompleted = false;
+          if (!S.koraInterventionCount) S.koraInterventionCount = 0;
+
           if (!S.customAI) {
             S.customAI = {
               name: 'Kora',
@@ -5761,10 +5778,10 @@ Directives:
     function showDashboard() {
       try {
         const root = document.getElementById('app-sanctuary-root');
-        if (root) root.classList.remove('hidden');
+        if (root) { root.classList.remove('hidden'); root.style.display = ''; }
         ['landing-page-overlay', 'cinematic-prologue-cutscene', 'tour-spotlight-modal', 'voiced-intro-modal', 'auth-gate', 'modal-auth'].forEach(id => {
           const el = document.getElementById(id);
-          if (el) el.classList.add('hidden');
+          if (el) { el.classList.add('hidden'); el.style.display = 'none'; }
         });
         _switchLock = false;
         switchScreen('dashboard', true);
@@ -6662,9 +6679,9 @@ Directives:
     let _switchLock = false;
     function switchScreen(screenName, force = false) {
       const root = document.getElementById('app-sanctuary-root');
-      if (root && root.classList.contains('hidden')) root.classList.remove('hidden');
+      if (root && root.classList.contains('hidden')) { root.classList.remove('hidden'); root.style.display = ''; }
       const overlay = document.getElementById('landing-page-overlay');
-      if (overlay && !overlay.classList.contains('hidden')) overlay.classList.add('hidden');
+      if (overlay && !overlay.classList.contains('hidden')) { overlay.classList.add('hidden'); overlay.style.display = 'none'; }
 
       const allScreens = document.querySelectorAll('.screen');
       const targetScreen = document.getElementById(`screen-${screenName}`);
