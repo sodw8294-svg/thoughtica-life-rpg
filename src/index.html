@@ -5779,7 +5779,11 @@ Directives:
       try {
         const root = document.getElementById('app-sanctuary-root');
         if (root) { root.classList.remove('hidden'); root.style.display = ''; }
-        ['landing-page-overlay', 'cinematic-prologue-cutscene', 'tour-spotlight-modal', 'voiced-intro-modal', 'auth-gate', 'modal-auth'].forEach(id => {
+        
+        const overlay = document.getElementById('landing-page-overlay');
+        if (overlay) overlay.remove(); // Nuke it from orbit to guarantee it's gone
+        
+        ['cinematic-prologue-cutscene', 'tour-spotlight-modal', 'voiced-intro-modal', 'auth-gate', 'modal-auth'].forEach(id => {
           const el = document.getElementById(id);
           if (el) { el.classList.add('hidden'); el.style.display = 'none'; }
         });
@@ -6681,7 +6685,7 @@ Directives:
       const root = document.getElementById('app-sanctuary-root');
       if (root && root.classList.contains('hidden')) { root.classList.remove('hidden'); root.style.display = ''; }
       const overlay = document.getElementById('landing-page-overlay');
-      if (overlay && !overlay.classList.contains('hidden')) { overlay.classList.add('hidden'); overlay.style.display = 'none'; }
+      if (overlay) overlay.remove();
 
       const allScreens = document.querySelectorAll('.screen');
       const targetScreen = document.getElementById(`screen-${screenName}`);
