@@ -45,7 +45,12 @@ const ALL_SOUNDS: Sound[] = [
   { id: 'aurora', name: 'Aurora Drift', icon: Moon, category: 'Night & Cosmos', freq: 220, type: 'triangle', description: 'Ethereal northern lights shimmer' },
 ]
 
-export function SoundtrackTab() {
+interface SoundtrackTabProps {
+  /** Called each time a new soundscape starts playing */
+  onPlay?: (soundName: string) => void
+}
+
+export function SoundtrackTab({ onPlay }: SoundtrackTabProps = {}) {
   const [activePage, setActivePage] = useState(0)
   const [playing, setPlaying] = useState<string | null>(null)
   const [volume, setVolume] = useState(40)
@@ -84,8 +89,9 @@ export function SoundtrackTab() {
       oscRef.current = osc
       gainRef.current = gain
       setPlaying(sound.id)
+      onPlay?.(sound.name)
     } catch {}
-  }, [volume])
+  }, [volume, onPlay])
 
   const stopSound = useCallback(() => {
     if (gainRef.current && audioCtxRef.current) {
