@@ -10049,7 +10049,7 @@ Upgrade to **Thoughtica Pro** for unlimited conversations, long-term memory, and
       { id: 'gratitude', icon: '🙏', label: 'Gratitude Flash', desc: 'Name 3 things you are genuinely grateful for', xp: 15, action: () => { showXPToast(15, 'Gratitude practice complete — perspective shifted!', 1.0); } }
     ];
 
-    // detoxTimerInterval is declared in a previous script block
+    let detoxTimerInterval = null;
     let detoxTimerSecondsLeft = 0;
     let detoxTimerTotalSeconds = 0;
 
