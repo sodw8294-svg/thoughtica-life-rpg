@@ -1,18 +1,22 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { useState, useEffect, useRef, useCallback, type FormEvent, type KeyboardEvent } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  Sparkles, Brain, PenLine, Music, Target, BarChart3, MessageCircle,
-  Send, Heart, Moon, Sun, Zap, Trophy, Star, Crown, Check, ChevronRight,
-  ChevronLeft, X, Download, Settings, Volume2, Play, Pause, Plus,
-  Trash2, ArrowUp, ArrowRight, RefreshCw, Quote, BookOpen, Compass,
-  Gem, Clock, Flame, Shield, Bell, Info, Smile, Frown, Meh, Wind, Timer, type LucideIcon
+  Leaf, Sparkles, Wind, ShieldOff, BookOpen, Trophy, Gem, Settings as SettingsIcon,
 } from 'lucide-react'
+
+import { AuraBackground } from '@/components/AuraBackground'
+import { TopTabBar, type TabDef } from '@/components/TopTabBar'
+import { NatureTab } from '@/components/NatureTab'
 import { RelaxTab } from '@/components/RelaxTab'
-import { SoundtrackTab } from '@/components/SoundtrackTab'
 import { DetoxTab } from '@/components/DetoxTab'
-import { blink } from '@/blink/client'
-import { processCompanionTurn, loadConversation, loadPersonality, loadMemories } from '@/lib/companion'
+import { KoraTab, type KoraMessage } from '@/components/KoraTab'
+import { JournalTab, type JournalEntry } from '@/components/JournalTab'
+import { XpTab } from '@/components/XpTab'
+import { PricingTab } from '@/components/PricingTab'
+import { ThemesTab } from '@/components/ThemesTab'
+import { getTheme, DEFAULT_THEME_ID, themeToCssVars } from '@/lib/themes'
+import { XP_REWARDS, xpProgress } from '@/lib/xp'
 import type { RpgContext } from '@/lib/companion'
 
 /* ═══════════════════════════════════════════════════════════════
@@ -20,116 +24,294 @@ import type { RpgContext } from '@/lib/companion'
    ═══════════════════════════════════════════════════════════════ */
 
 type Tier = 'free' | 'pro'
-type CompanionPersona = 'calm-philosopher' | 'gentle-strategist' | 'socratic-mentor'
-type AuraMood = 'dawn-mist' | 'sage-sanctuary' | 'twilight-solitude'
-type TabId = 'companion' | 'journal' | 'relax' | 'soundscapes' | 'soundtrack' | 'detox' | 'rituals' | 'reports'
-
-interface CompanionConfig { name: string; persona: CompanionPersona; aura: AuraMood }
-interface JournalEntry { id: string; text: string; mood: 'happy' | 'neutral' | 'sad'; createdAt: string; aiReflection?: string }
-interface ChatMessage { id: string; role: 'user' | 'companion'; text: string; timestamp: string }
-interface PathMarker { id: string; text: string; completed: boolean; createdAt: string }
-interface Badge { id: string; name: string; description: string; icon: string; unlockedAt?: string }
-interface SoulReport { id: string; date: string; moodTrend: number[]; topTopics: string[]; tasksCompleted: number; summary: string }
+type TabId = 'nature' | 'relax' | 'detox' | 'kora' | 'journal' | 'xp' | 'pricing' | 'settings'
 
 interface AppState {
-  onboardingDone: boolean
-  companion: CompanionConfig
+  activeTab: TabId
   tier: Tier
-  trialActive: boolean
-  trialStartDate: string | null
+  themeId: string
+  unlockedThemeIds: string[]
+  auraHue: number
   xp: number
-  level: number
   streak: number
   lastActiveDate: string | null
+  todayXp: number
+  todayXpDate: string
   journalEntries: JournalEntry[]
-  chatMessages: ChatMessage[]
-  aiInteractionsRemaining: number
-  pathMarkers: PathMarker[]
-  intention: string
-  wordOfDay: { word: string; definition: string; date: string }
-  badges: Badge[]
-  soundMix: { rain: number; wind: number; fire: number; ocean: number }
-  activeSoundscape: string | null
-  reports: SoulReport[]
-  billingInterval: 'monthly' | 'annual'
+  koraMessages: KoraMessage[]
+  journalCount: number
+  breathingCount: number
+  soundscapeCount: number
+  detoxCount: number
+  koraChatCount: number
 }
 
-const PERSONAS: Record<CompanionPersona, { label: string; desc: string; emoji: string }> = {
-  'calm-philosopher': { label: 'The Calm Philosopher', desc: 'Gentle wisdom rooted in stoic tranquility.', emoji: '🏛️' },
-  'gentle-strategist': { label: 'The Gentle Strategist', desc: 'Practical clarity with compassionate guidance.', emoji: '🧭' },
-  'socratic-mentor': { label: 'The Socratic Mentor', desc: 'Provocative questions that unlock insight.', emoji: '🦉' },
-}
+const STORAGE_KEY = 'thoughtica-v2-state'
+const USER_ID = 'thoughtica-local-user'
 
-const AURAS: Record<AuraMood, { label: string; desc: string; gradient: string }> = {
-  'dawn-mist': { label: 'Dawn Mist', desc: 'Soft lavender to warm peach.', gradient: 'from-purple-100 via-rose-50 to-amber-50' },
-  'sage-sanctuary': { label: 'Sage Sanctuary', desc: 'Muted sage green to stone.', gradient: 'from-emerald-50 via-stone-50 to-teal-50' },
-  'twilight-solitude': { label: 'Twilight Solitude', desc: 'Deep indigo to silver blue.', gradient: 'from-indigo-100 via-slate-50 to-sky-100' },
-}
-
-const AURA_GRADIENTS: Record<AuraMood, string> = {
-  'dawn-mist': 'from-purple-200/40 via-rose-100/30 to-amber-100/40',
-  'sage-sanctuary': 'from-emerald-200/40 via-stone-100/30 to-teal-100/40',
-  'twilight-solitude': 'from-indigo-200/40 via-slate-100/30 to-sky-100/40',
-}
-
-const WORDS_OF_DAY = [
-  { word: 'Equanimity', definition: 'Mental calmness and composure, especially in difficult situations.' },
-  { word: 'Sonder', definition: 'The realization that every passerby has a life as vivid and complex as your own.' },
-  { word: 'Ephemeral', definition: 'Lasting for a very short time; a reminder to savor the present.' },
-  { word: 'Resilience', definition: 'The capacity to recover quickly from difficulties; inner toughness.' },
-  { word: 'Ubuntu', definition: 'A quality that includes the essential human virtues of compassion and humanity.' },
-  { word: 'Kintsugi', definition: 'The Japanese art of repairing broken pottery with gold — embracing flaws.' },
-  { word: 'Petrichor', definition: 'The pleasant, earthy scent after rain — a moment of grounding.' },
+const TABS: TabDef[] = [
+  { id: 'nature', label: 'Nature', icon: Leaf, emoji: '🌿' },
+  { id: 'kora', label: 'Kora', icon: Sparkles, emoji: '🤖' },
+  { id: 'relax', label: 'Relax', icon: Wind, emoji: '🧘' },
+  { id: 'detox', label: 'Detox', icon: ShieldOff, emoji: '📵' },
+  { id: 'journal', label: 'Journal', icon: BookOpen, emoji: '📓' },
+  { id: 'xp', label: 'XP', icon: Trophy, emoji: '🏆' },
+  { id: 'pricing', label: 'Pricing', icon: Gem, emoji: '💎' },
+  { id: 'settings', label: 'Settings', icon: SettingsIcon, emoji: '⚙️' },
 ]
 
-const ALL_BADGES: Badge[] = [
-  { id: 'first-reflection', name: 'First Reflection', description: 'Wrote your first journal entry.', icon: 'BookOpen' },
-  { id: '7-day-streak', name: '7-Day Streak Master', description: 'Maintained a 7-day mindfulness streak.', icon: 'Flame' },
-  { id: 'zen-master', name: 'Zen Master', description: 'Reached Level 5 in your mindfulness journey.', icon: 'Trophy' },
-  { id: 'sound-explorer', name: 'Sound Explorer', description: 'Tried all four soundscapes.', icon: 'Music' },
-  { id: 'path-clearer', name: 'Path Clearer', description: 'Completed 10 path markers.', icon: 'Target' },
-  { id: 'ai-bond', name: 'AI Bond', description: 'Had 50 conversations with your companion.', icon: 'Sparkles' },
-]
-
-const SOUND_PRESETS = [
-  { id: 'rain', name: 'Rain on Glass', icon: 'CloudRain' as const, freq: 200 },
-  { id: 'forest', name: 'Forest Canopy', icon: 'TreePine' as const, freq: 350 },
-  { id: 'binaural', name: 'Deep Delta Binaural', icon: 'Waves' as const, freq: 140 },
-  { id: 'hearth', name: 'Warm Hearth Fire', icon: 'Flame' as const, freq: 500 },
-]
-
-const XP_PER_TASK = 50
-const XP_PER_INTENTION = 25
-const FREE_AI_LIMIT = 10
-const PRICING = {
-  pro: { monthly: 4.99 },
+function todayStr() {
+  return new Date().toISOString().split('T')[0]
 }
-
-function todayStr() { return new Date().toISOString().split('T')[0] }
 
 function getDefaultState(): AppState {
   return {
-    onboardingDone: false,
-    companion: { name: 'Aria', persona: 'calm-philosopher', aura: 'sage-sanctuary' },
+    activeTab: 'nature',
     tier: 'free',
-    trialActive: false,
-    trialStartDate: null,
+    themeId: DEFAULT_THEME_ID,
+    unlockedThemeIds: [],
+    auraHue: 0,
     xp: 0,
-    level: 1,
     streak: 0,
     lastActiveDate: null,
+    todayXp: 0,
+    todayXpDate: todayStr(),
     journalEntries: [],
-    chatMessages: [{ id: 'welcome', role: 'companion', text: 'Welcome to your sanctuary. I\'m here to walk with you. How are you feeling today?', timestamp: new Date().toISOString() }],
-    aiInteractionsRemaining: FREE_AI_LIMIT,
-    pathMarkers: [],
-    intention: '',
-    wordOfDay: { word: 'Equanimity', definition: 'Mental calmness and composure, especially in difficult situations.', date: todayStr() },
-    badges: [],
-    soundMix: { rain: 65, wind: 30, fire: 40, ocean: 50 },
-    activeSoundscape: null,
-    reports: [],
-    billingInterval: 'monthly',
+    koraMessages: [],
+    journalCount: 0,
+    breathingCount: 0,
+    soundscapeCount: 0,
+    detoxCount: 0,
+    koraChatCount: 0,
   }
 }
 
-/* ... file unchanged for brevity in this tool payload ... */
+function loadState(): AppState {
+  if (typeof window === 'undefined') return getDefaultState()
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY)
+    if (!raw) return getDefaultState()
+    return { ...getDefaultState(), ...JSON.parse(raw) }
+  } catch {
+    return getDefaultState()
+  }
+}
+
+export const Route = createFileRoute('/')({
+  component: ThoughticaApp,
+})
+
+/* ═══════════════════════════════════════════════════════════════
+   MAIN APP
+   ═══════════════════════════════════════════════════════════════ */
+
+function ThoughticaApp() {
+  const [state, setState] = useState<AppState>(() => getDefaultState())
+  const hydrated = useRef(false)
+
+  // Hydrate from localStorage + run the daily-streak check exactly once on mount
+  // (avoids SSR/client mismatch — localStorage only exists client-side).
+  useEffect(() => {
+    const loaded = loadState()
+    const today = todayStr()
+
+    if (loaded.lastActiveDate === today) {
+      setState(loaded)
+      hydrated.current = true
+      return
+    }
+
+    let nextStreak = 1
+    let bonusXp = 0
+    if (loaded.lastActiveDate) {
+      const last = new Date(loaded.lastActiveDate)
+      const diffDays = Math.round((new Date(today).getTime() - last.getTime()) / 86400000)
+      if (diffDays === 1) {
+        nextStreak = loaded.streak + 1
+        bonusXp = XP_REWARDS.dailyStreak
+      } else if (diffDays <= 0) {
+        nextStreak = loaded.streak
+      }
+    }
+
+    setState({
+      ...loaded,
+      streak: nextStreak,
+      lastActiveDate: today,
+      xp: loaded.xp + bonusXp,
+      todayXp: bonusXp,
+      todayXpDate: today,
+    })
+    hydrated.current = true
+  }, [])
+
+  // Persist to localStorage on every change (once hydrated)
+  useEffect(() => {
+    if (!hydrated.current) return
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
+    } catch {
+      // no-op
+    }
+  }, [state])
+
+  const awardXp = useCallback((amount: number) => {
+    const today = todayStr()
+    setState(prev => {
+      const dateChanged = prev.todayXpDate !== today
+      return {
+        ...prev,
+        xp: prev.xp + amount,
+        todayXp: dateChanged ? amount : prev.todayXp + amount,
+        todayXpDate: today,
+      }
+    })
+  }, [])
+
+  const setActiveTab = useCallback((id: string) => {
+    setState(prev => ({ ...prev, activeTab: id as TabId }))
+  }, [])
+
+  const theme = useMemo(() => getTheme(state.themeId), [state.themeId])
+  const cssVars = useMemo(() => themeToCssVars(theme), [theme])
+
+  const rpgContext: RpgContext = useMemo(
+    () => ({
+      level: xpProgress(state.xp).level,
+      xp: state.xp,
+      streak: state.streak,
+      activeQuestNames: [],
+      recentBadgeNames: [],
+    }),
+    [state.xp, state.streak]
+  )
+
+  const badgeCtx = useMemo(
+    () => ({
+      level: xpProgress(state.xp).level,
+      xp: state.xp,
+      streak: state.streak,
+      journalCount: state.journalCount,
+      breathingCount: state.breathingCount,
+      soundscapeCount: state.soundscapeCount,
+      detoxCount: state.detoxCount,
+      koraChatCount: state.koraChatCount,
+    }),
+    [state]
+  )
+
+  const goToPricing = useCallback(() => setActiveTab('pricing'), [setActiveTab])
+
+  const renderTab = () => {
+    switch (state.activeTab) {
+      case 'nature':
+        return (
+          <NatureTab
+            onSoundscapeUse={() => {
+              setState(prev => ({ ...prev, soundscapeCount: prev.soundscapeCount + 1 }))
+              awardXp(XP_REWARDS.soundscapeUse)
+            }}
+            onBreathingComplete={() => {
+              setState(prev => ({ ...prev, breathingCount: prev.breathingCount + 1 }))
+              awardXp(XP_REWARDS.breathingComplete)
+            }}
+          />
+        )
+      case 'relax':
+        return (
+          <div className="max-w-3xl mx-auto rounded-3xl border backdrop-blur-xl shadow-xl overflow-hidden" style={{ background: 'var(--t-surface)', borderColor: 'var(--t-border)', minHeight: 560 }}>
+            <RelaxTab
+              onSessionComplete={() => {
+                setState(prev => ({ ...prev, breathingCount: prev.breathingCount + 1 }))
+                awardXp(XP_REWARDS.breathingComplete)
+              }}
+            />
+          </div>
+        )
+      case 'detox':
+        return (
+          <div className="max-w-3xl mx-auto rounded-3xl border backdrop-blur-xl shadow-xl overflow-hidden" style={{ background: 'var(--t-surface)', borderColor: 'var(--t-border)', minHeight: 700 }}>
+            <DetoxTab
+              onDetoxSession={() => {
+                setState(prev => ({ ...prev, detoxCount: prev.detoxCount + 1 }))
+                awardXp(XP_REWARDS.detoxSession)
+              }}
+            />
+          </div>
+        )
+      case 'kora':
+        return (
+          <KoraTab
+            userId={USER_ID}
+            messages={state.koraMessages}
+            onMessagesChange={msgs => setState(prev => ({ ...prev, koraMessages: msgs }))}
+            rpgContext={rpgContext}
+            onChatTurn={() => {
+              setState(prev => ({ ...prev, koraChatCount: prev.koraChatCount + 1 }))
+              awardXp(XP_REWARDS.koraChat)
+            }}
+          />
+        )
+      case 'journal':
+        return (
+          <JournalTab
+            entries={state.journalEntries}
+            onEntriesChange={entries => setState(prev => ({ ...prev, journalEntries: entries }))}
+            onEntrySaved={() => {
+              setState(prev => ({ ...prev, journalCount: prev.journalCount + 1 }))
+              awardXp(XP_REWARDS.journalEntry)
+            }}
+          />
+        )
+      case 'xp':
+        return <XpTab xp={state.xp} streak={state.streak} badgeCtx={badgeCtx} todayXp={state.todayXp} />
+      case 'pricing':
+        return (
+          <PricingTab
+            tier={state.tier}
+            unlockedThemeIds={state.unlockedThemeIds}
+            onUpgrade={() => setState(prev => ({ ...prev, tier: 'pro' }))}
+            onBuyTheme={id => setState(prev => ({ ...prev, unlockedThemeIds: [...new Set([...prev.unlockedThemeIds, id])] }))}
+          />
+        )
+      case 'settings':
+        return (
+          <ThemesTab
+            activeThemeId={state.themeId}
+            unlockedThemeIds={state.unlockedThemeIds}
+            tier={state.tier}
+            auraHue={state.auraHue}
+            onSelectTheme={id => setState(prev => ({ ...prev, themeId: id }))}
+            onAuraHueChange={hue => setState(prev => ({ ...prev, auraHue: hue }))}
+            onGoToPricing={goToPricing}
+          />
+        )
+      default:
+        return null
+    }
+  }
+
+  return (
+    <div
+      className="min-h-dvh w-full relative"
+      style={{ ...cssVars, color: 'var(--t-text)', fontFamily: 'var(--font-sans)' }}
+    >
+      <AuraBackground colors={theme.aura} hueOffset={state.auraHue} />
+      <TopTabBar tabs={TABS} activeTab={state.activeTab} onChange={setActiveTab} />
+
+      <main className="relative z-10 px-4 pt-24 pb-24 md:pt-28 md:pb-12 max-w-6xl mx-auto">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={state.activeTab}
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -12 }}
+            transition={{ duration: 0.25, ease: 'easeOut' }}
+          >
+            {renderTab()}
+          </motion.div>
+        </AnimatePresence>
+      </main>
+    </div>
+  )
+}

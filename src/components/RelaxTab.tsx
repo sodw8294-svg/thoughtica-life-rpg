@@ -11,7 +11,12 @@ const PHASE_CONFIG: Record<BreathPhase, { label: string; seconds: number; color:
   exhale: { label: 'Breathe Out', seconds: 8, color: '#8b5cf6', scale: 0.5 },
 }
 
-export function RelaxTab() {
+interface RelaxTabProps {
+  /** Called once a full breathing session (all cycles) completes */
+  onSessionComplete?: () => void
+}
+
+export function RelaxTab({ onSessionComplete }: RelaxTabProps = {}) {
   const [phase, setPhase] = useState<BreathPhase>('idle')
   const [countdown, setCountdown] = useState(0)
   const [isActive, setIsActive] = useState(false)
@@ -51,7 +56,7 @@ export function RelaxTab() {
             setCycles(c => {
               const next = c + 1
               if (next >= totalCycles) {
-                setTimeout(() => { stop(); setPhase('idle'); setCountdown(0) }, 50)
+                setTimeout(() => { stop(); setPhase('idle'); setCountdown(0); onSessionComplete?.() }, 50)
                 return next
               }
               return next
@@ -65,7 +70,7 @@ export function RelaxTab() {
       })
     }, 1000)
     return () => { if (intervalRef.current) clearInterval(intervalRef.current) }
-  }, [isActive, totalCycles, stop])
+  }, [isActive, totalCycles, stop, onSessionComplete])
 
   useEffect(() => () => stop(), [stop])
 

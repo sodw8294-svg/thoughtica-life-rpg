@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   Timer, Shield, Brain, Zap, Clock, AlertTriangle, CheckCircle2,
   BarChart3, Sparkles, Smartphone, Lock, Unlock, Trophy, Target,
-  ArrowUpRight, X, TrendingUp, Activity
+  ArrowUpRight, X, TrendingUp, Activity, ShieldCheck, Flame, Quote as QuoteIcon,
 } from 'lucide-react'
 
 /* ═══════════════════════════════════════════════════════════════
@@ -38,11 +38,42 @@ interface DetoxInsight {
   recommendation: string
 }
 
+const MOTIVATIONAL_QUOTES = [
+  'Every minute of focus is a vote for the person you want to become.',
+  'Your attention is the most valuable thing you own. Spend it wisely.',
+  "The urge is temporary. The peace of mind you're building is not.",
+  "Boredom is the doorway to creativity — don't slam it shut with a screen.",
+  'You are not missing out. You are tuning in.',
+  'Discipline is choosing between what you want now and what you want most.',
+  'Silence the noise. Your future self is listening.',
+  "Freedom is not having everything — it's not needing everything.",
+]
+
+interface ChallengeLevel {
+  level: number
+  name: string
+  requirement: number
+  icon: string
+}
+
+const CHALLENGE_LEVELS: ChallengeLevel[] = [
+  { level: 1, name: 'Awareness', requirement: 0, icon: '👁️' },
+  { level: 2, name: 'Resistance', requirement: 3, icon: '🛡️' },
+  { level: 3, name: 'Discipline', requirement: 10, icon: '⚡' },
+  { level: 4, name: 'Mastery', requirement: 25, icon: '🧠' },
+  { level: 5, name: 'Digital Sovereign', requirement: 50, icon: '👑' },
+]
+
 /* ═══════════════════════════════════════════════════════════════
    DETOX TAB
    ═══════════════════════════════════════════════════════════════ */
 
-export function DetoxTab() {
+interface DetoxTabProps {
+  /** Called each time a full focus session completes */
+  onDetoxSession?: () => void
+}
+
+export function DetoxTab({ onDetoxSession }: DetoxTabProps = {}) {
   // Focus timer
   const [timerMinutes, setTimerMinutes] = useState(25)
   const [timerRunning, setTimerRunning] = useState(false)
@@ -66,6 +97,13 @@ export function DetoxTab() {
   })
 
   const [activeView, setActiveView] = useState<'timer' | 'insights'>('timer')
+  const [quoteIndex, setQuoteIndex] = useState(0)
+
+  // Rotate motivational quotes
+  useEffect(() => {
+    const id = setInterval(() => setQuoteIndex(i => (i + 1) % MOTIVATIONAL_QUOTES.length), 7000)
+    return () => clearInterval(id)
+  }, [])
 
   // Save sessions & urges
   useEffect(() => {
@@ -134,6 +172,7 @@ export function DetoxTab() {
     currentSessionRef.current = null
     // Generate AI insight on completion
     generateInsight()
+    onDetoxSession?.()
   }
 
   const logUrge = () => {
@@ -201,12 +240,114 @@ export function DetoxTab() {
   const resistedCount = urgeEvents.filter(u => u.resisted).length
   const resistRate = totalUrges > 0 ? Math.round((resistedCount / totalUrges) * 100) : 100
 
+  // Consecutive-day detox streak (days with at least one completed session)
+  const streakDays = (() => {
+    const days = new Set(
+      focusSessions.filter(s => s.completed).map(s => new Date(s.startTime).toDateString())
+    )
+    let streak = 0
+    const cursor = new Date()
+    while (days.has(cursor.toDateString())) {
+      streak++
+      cursor.setDate(cursor.getDate() - 1)
+    }
+    return streak
+  })()
+
+  const currentChallenge = [...CHALLENGE_LEVELS].reverse().find(c => completedSessions >= c.requirement) ?? CHALLENGE_LEVELS[0]
+  const nextChallenge = CHALLENGE_LEVELS.find(c => c.requirement > completedSessions)
+
   const QUICK_APPS = ['Instagram', 'TikTok', 'Twitter/X', 'YouTube', 'Reddit', 'Facebook', 'Snapchat', 'News']
 
   return (
     <div className="flex flex-col h-full">
+      {/* Hero — Digital Freedom */}
+      <div className="shrink-0 px-4 pt-5 pb-4 text-center relative overflow-hidden">
+        <motion.div
+          className="absolute inset-0 -z-10 opacity-20"
+          style={{ background: 'radial-gradient(circle at 50% 0%, #22c55e, transparent 70%)' }}
+          animate={{ opacity: [0.15, 0.3, 0.15] }}
+          transition={{ duration: 4, repeat: Infinity }}
+        />
+        <motion.div
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          className="mx-auto mb-2 w-16 h-16 rounded-3xl flex items-center justify-center bg-gradient-to-br from-emerald-400/20 to-blue-500/20 border border-emerald-400/30 shadow-lg"
+        >
+          <ShieldCheck className="w-8 h-8 text-emerald-500" />
+        </motion.div>
+        <h2 className="text-xl font-bold tracking-tight" style={{ color: 'var(--t-text, inherit)' }}>Digital Freedom</h2>
+        <p className="text-xs mt-0.5" style={{ color: 'var(--t-text-muted, inherit)' }}>Reclaim your attention. Rewire your dopamine.</p>
+
+        {/* Streak counter */}
+        <div className="flex items-center justify-center gap-4 mt-3">
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-orange-500/10 border border-orange-500/20">
+            <Flame className="w-3.5 h-3.5 text-orange-500" />
+            <span className="text-xs font-bold" style={{ color: 'var(--t-text, inherit)' }}>{streakDays}</span>
+            <span className="text-[10px]" style={{ color: 'var(--t-text-muted, inherit)' }}>day streak</span>
+          </div>
+          <div
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border"
+            style={{ backgroundColor: 'color-mix(in srgb, var(--t-accent, #6366f1) 12%, transparent)', borderColor: 'color-mix(in srgb, var(--t-accent, #6366f1) 25%, transparent)' }}
+          >
+            <span className="text-sm leading-none">{currentChallenge.icon}</span>
+            <span className="text-xs font-bold" style={{ color: 'var(--t-text, inherit)' }}>{currentChallenge.name}</span>
+          </div>
+        </div>
+
+        {/* Rotating motivational quote */}
+        <div className="mt-4 max-w-sm mx-auto min-h-[2.5rem] flex items-center justify-center">
+          <AnimatePresence mode="wait">
+            <motion.p
+              key={quoteIndex}
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -6 }}
+              transition={{ duration: 0.4 }}
+              className="text-[11px] italic flex items-start gap-1.5"
+              style={{ color: 'var(--t-text-muted, inherit)' }}
+            >
+              <QuoteIcon className="w-3 h-3 mt-0.5 shrink-0" style={{ color: 'var(--t-accent, currentColor)', opacity: 0.5 }} />
+              {MOTIVATIONAL_QUOTES[quoteIndex]}
+            </motion.p>
+          </AnimatePresence>
+        </div>
+      </div>
+
+      {/* Dopamine Detox Challenge levels */}
+      <div className="shrink-0 px-4 pb-4">
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
+          {CHALLENGE_LEVELS.map(c => {
+            const reached = completedSessions >= c.requirement
+            const active = c.level === currentChallenge.level
+            return (
+              <div
+                key={c.level}
+                className={`shrink-0 flex flex-col items-center gap-1 px-3 py-2 rounded-2xl border text-center min-w-[84px] transition-all ${
+                  active
+                    ? 'shadow-sm'
+                    : reached
+                    ? 'border-emerald-400/30 bg-emerald-400/5'
+                    : 'border-border/60 bg-muted/30 opacity-50'
+                }`}
+                style={active ? { borderColor: 'color-mix(in srgb, var(--t-accent, #6366f1) 40%, transparent)', backgroundColor: 'color-mix(in srgb, var(--t-accent, #6366f1) 12%, transparent)' } : undefined}
+              >
+                <span className="text-lg leading-none">{c.icon}</span>
+                <span className="text-[10px] font-semibold leading-tight" style={{ color: 'var(--t-text, inherit)' }}>{c.name}</span>
+                <span className="text-[9px]" style={{ color: 'var(--t-text-muted, inherit)' }}>Lvl {c.level}</span>
+              </div>
+            )
+          })}
+        </div>
+        {nextChallenge && (
+          <p className="text-[10px] text-center mt-1.5" style={{ color: 'var(--t-text-muted, inherit)' }}>
+            {nextChallenge.requirement - completedSessions} more session{nextChallenge.requirement - completedSessions === 1 ? '' : 's'} to unlock <span className="font-semibold" style={{ color: 'var(--t-text, inherit)' }}>{nextChallenge.name}</span>
+          </p>
+        )}
+      </div>
+
       {/* View toggle */}
-      <div className="shrink-0 p-4 border-b border-border/60">
+      <div className="shrink-0 px-4 pb-4 border-b border-border/60">
         <div className="flex items-center bg-muted rounded-xl p-1">
           <button
             onClick={() => setActiveView('timer')}
@@ -331,7 +472,7 @@ export function DetoxTab() {
                   )}
                 </div>
 
-                <button
+                <motion.button
                   onClick={() => setShowUrgeModal(true)}
                   whileTap={{ scale: 0.97 }}
                   className="w-full p-3 rounded-xl border border-dashed border-destructive/30 bg-destructive/5 hover:bg-destructive/10 transition-colors text-center"
@@ -339,7 +480,7 @@ export function DetoxTab() {
                   <AlertTriangle className="w-5 h-5 text-destructive mx-auto mb-1" />
                   <p className="text-sm font-semibold text-destructive">I'm Feeling an Urge</p>
                   <p className="text-[10px] text-muted-foreground mt-0.5">Log it to interrupt the impulse cycle</p>
-                </button>
+                </motion.button>
 
                 {/* Quick urge log */}
                 {timerRunning && (
