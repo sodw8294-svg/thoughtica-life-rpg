@@ -43,7 +43,6 @@
     "glob": "^13.0.6",
     "globals": "^17.7.0",
     "lucide-react": "^1.25.0",
-    "puppeteer": "^25.5.0",
     "react-hook-form": "^7.82.0",
     "react-hot-toast": "^2.6.0",
     "react-responsive": "^10.0.1",
