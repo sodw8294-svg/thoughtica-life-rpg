@@ -331,7 +331,7 @@ export function DetoxTab() {
                   )}
                 </div>
 
-                <button
+                <motion.button
                   onClick={() => setShowUrgeModal(true)}
                   whileTap={{ scale: 0.97 }}
                   className="w-full p-3 rounded-xl border border-dashed border-destructive/30 bg-destructive/5 hover:bg-destructive/10 transition-colors text-center"
@@ -339,7 +339,7 @@ export function DetoxTab() {
                   <AlertTriangle className="w-5 h-5 text-destructive mx-auto mb-1" />
                   <p className="text-sm font-semibold text-destructive">I'm Feeling an Urge</p>
                   <p className="text-[10px] text-muted-foreground mt-0.5">Log it to interrupt the impulse cycle</p>
-                </button>
+                </motion.button>
 
                 {/* Quick urge log */}
                 {timerRunning && (
