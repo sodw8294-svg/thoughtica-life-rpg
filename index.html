@@ -9986,45 +9986,60 @@ Upgrade to **Thoughtica Pro** for unlimited AI conversations, long-term memory, 
     // ── Sanctuary Entry ────────────────────────────
     function enterSanctuary() {
       const root = document.getElementById('app-sanctuary-root');
-      if (root) root.classList.remove('hidden');
       const ov = document.getElementById('landing-page-overlay');
-      if (ov) ov.remove();
 
-      // Check URL params for payment result
-      const params = new URLSearchParams(window.location.search);
-      if (params.get('payment_success')) {
-        const tier = params.get('tier') || 'premium';
-        const toast = document.getElementById('payment-toast');
-        const msg = document.getElementById('payment-toast-msg');
-        if (toast && msg) {
-          let displayTier = tier;
-          if (tier === 'theme_midnight') displayTier = 'Midnight Void Theme';
-          if (tier === 'theme_zen') displayTier = 'Zen Garden Theme';
-          if (tier === 'aura_rain') displayTier = 'Mountain Rain Aura';
-          msg.textContent = `✨ ${displayTier.charAt(0).toUpperCase() + displayTier.slice(1)} unlocked! Welcome to your upgraded Sanctuary.`;
-          toast.classList.remove('hidden');
-          setTimeout(() => toast.classList.add('hidden'), 8000);
-        }
-        window.history.replaceState({}, '', window.location.pathname);
-      } else if (params.get('payment_cancelled')) {
-        window.history.replaceState({}, '', window.location.pathname);
-      }
+      try {
+        if (root) root.classList.remove('hidden');
+        if (ov) ov.remove();
 
-      // Firebase auth gate
-      if (_auth) {
-        _auth.onAuthStateChanged(user => {
-          _currentUser = user;
-          if (user) {
-            hideAuthGate();
-            launchApp();
-          } else if (!_guestMode) {
-            showAuthGate();
-            document.getElementById('app-sanctuary-root').classList.add('hidden');
+        // Check URL params for payment result
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('payment_success')) {
+          const tier = params.get('tier') || 'premium';
+          const toast = document.getElementById('payment-toast');
+          const msg = document.getElementById('payment-toast-msg');
+          if (toast && msg) {
+            let displayTier = tier;
+            if (tier === 'theme_midnight') displayTier = 'Midnight Void Theme';
+            if (tier === 'theme_zen') displayTier = 'Zen Garden Theme';
+            if (tier === 'aura_rain') displayTier = 'Mountain Rain Aura';
+            msg.textContent = `✨ ${displayTier.charAt(0).toUpperCase() + displayTier.slice(1)} unlocked! Welcome to your upgraded Sanctuary.`;
+            toast.classList.remove('hidden');
+            setTimeout(() => toast.classList.add('hidden'), 8000);
           }
-        });
-      } else {
-        // No Firebase — offer guest mode directly
-        showAuthGate();
+          window.history.replaceState({}, '', window.location.pathname);
+        } else if (params.get('payment_cancelled')) {
+          window.history.replaceState({}, '', window.location.pathname);
+        }
+
+        // Firebase auth gate
+        if (_auth) {
+          _auth.onAuthStateChanged(user => {
+            try {
+              _currentUser = user;
+              if (user) {
+                hideAuthGate();
+                launchApp();
+              } else if (!_guestMode) {
+                showAuthGate();
+                const sanctuaryRoot = document.getElementById('app-sanctuary-root');
+                if (sanctuaryRoot) sanctuaryRoot.classList.add('hidden');
+              }
+            } catch (authCbErr) {
+              console.error('[Thoughtica] enterSanctuary auth callback error:', authCbErr);
+              try { showAuthGate(); } catch (e) { console.error('[Thoughtica] showAuthGate fallback failed:', e); }
+            }
+          });
+        } else {
+          // No Firebase — offer guest mode directly
+          showAuthGate();
+        }
+      } catch (err) {
+        console.error('[Thoughtica] enterSanctuary failed — clearing overlay and falling back to auth gate:', err);
+        // Always clear the landing overlay so the user is never locked out
+        const ovFallback = document.getElementById('landing-page-overlay');
+        if (ovFallback) ovFallback.remove();
+        try { showAuthGate(); } catch (e) { console.error('[Thoughtica] showAuthGate fallback also failed:', e); }
       }
     }
 
