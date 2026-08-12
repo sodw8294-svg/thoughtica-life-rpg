@@ -188,6 +188,7 @@ function IndexPage() {
   useEffect(() => {
     try {
       const saved = loadState()
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setAppState(saved)
     } catch (err) {
       console.error('[Thoughtica] Hydration error — starting with defaults:', err)

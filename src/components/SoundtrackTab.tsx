@@ -58,7 +58,7 @@ export function SoundtrackTab() {
   const startSound = useCallback((sound: Sound) => {
     try {
       if (oscRef.current) {
-        try { oscRef.current.stop() } catch {}
+        try { oscRef.current.stop() } catch { /* oscillator may already be stopped */ }
         oscRef.current.disconnect()
       }
       if (!audioCtxRef.current) audioCtxRef.current = new AudioContext()
@@ -84,7 +84,7 @@ export function SoundtrackTab() {
       oscRef.current = osc
       gainRef.current = gain
       setPlaying(sound.id)
-    } catch {}
+    } catch { /* audio context errors are non-fatal */ }
   }, [volume])
 
   const stopSound = useCallback(() => {
@@ -93,7 +93,7 @@ export function SoundtrackTab() {
     }
     setTimeout(() => {
       if (oscRef.current) {
-        try { oscRef.current.stop() } catch {}
+        try { oscRef.current.stop() } catch { /* oscillator may already be stopped */ }
         oscRef.current = null
       }
       setPlaying(null)

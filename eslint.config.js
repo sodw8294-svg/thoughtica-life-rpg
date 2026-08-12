@@ -6,7 +6,7 @@ import tseslint from 'typescript-eslint'
 
 export default tseslint.config(
   {
-    ignores: ['dist', '.vite-out', 'node_modules', 'scratch', 'api', 'android', 'src/routeTree.gen.ts'],
+    ignores: ['dist', '.vite-out', 'node_modules', 'scratch', 'api', 'android', 'src/routeTree.gen.ts', 'vite.config.ts', 'vite.config.mjs'],
   },
   {
     files: ['src/**/*.{ts,tsx}'],
